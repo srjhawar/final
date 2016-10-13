@@ -1,0 +1,45 @@
+<% provide(:title, 'Delete Booking') %>
+<h2>Deleting Booking</h2>
+<%= form_for (BookingHistory.new),:url=> url_for(:controller => 'booking_histories',:action =>'destroy') do |f| %>
+    <% if session[:user_role] == 'admin' %>
+        <% @member_booking = BookingHistory.all.order(:date) %>
+    <% else %>
+        <% user = session[:user_name] %>
+        <% @member_booking = BookingHistory.where("booking_histories.username = ? ",user ).order(:date) %>
+    <% end %>
+    <table border ='2'>
+      <tr>
+        <th>Booking id</th>
+        <th>Room Num </th>
+        <th>Size </th>
+        <th>Building</th>
+        <th>Date </th>
+        <th>Start time </th>
+        <th>End Time </th>
+      </tr>
+    <% @member_booking.each do |b| %>
+          <tr>
+            <td><%= "#{b.id}" %></td>
+            <td><%= "#{b.room_num}" %></td>
+            <td><%= "#{b.size}" %></td>
+            <td><%= "#{b.building}" %></td>
+            <td><%= "#{b.date}" %></td>
+            <td><%= "#{b.start_t}" %></td>
+            <td><%= "#{b.end_t}" %></td>
+
+            </tr>
+          <% end %>
+      </table>
+    <div class="field">
+      <label>Enter Booking Id:</label>
+      <%= f.text_field :id %>
+    </div>
+    <br>
+    <label>Are you sure you wish to delete this booking?</label>
+    <br>
+    <div class="actions">
+      <br>
+      <%= f.submit "Delete", class: 'btn btn-large btn-primary' %>
+    </div>
+    <br>
+<% end %>

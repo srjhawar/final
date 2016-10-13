@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+<h1>Library Reservation System</h1>
 <head>
   <title>Library Reservation System | <%= yield(:title) %></title>
   <%= stylesheet_link_tag    'default', media: 'all', 'data-turbolinks-track' => true %>
@@ -9,8 +10,18 @@
 <body>
 <%= yield %>
 <br>
-<% if session[:user_id] %>
-    <%= link_to 'Logout', root_path %>
+<% if current_page?(root_path) %>
+<% else %>
+<% if current_page?(dum_path) or current_page?(booking_histories_path) %>
+        <br><%= link_to 'Logout', root_path %>
+    <% else %>
+    <% if session[:user_role] == 'admin' %>
+        <br><%= link_to 'Back to Admin Console', dum_path%><br>
+        <% else %>
+        <br><%= link_to 'Back to Member Console', booking_histories_path%><br>
+    <% end %>
+    <br><%= link_to 'Logout', root_path %>
+<% end %>
 <% end %>
 </body>
 </html>

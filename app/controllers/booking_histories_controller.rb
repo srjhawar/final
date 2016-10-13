@@ -1,8 +1,4 @@
 class BookingHistoriesController < ApplicationController
-  #before_action :set_booking_history, only: [:show, :edit, :update, :destroy, :search]
-
-  # GET /booking_histories
-  # GET /booking_histories.json
 
   def index
     @booking_histories = BookingHistory.all
@@ -13,54 +9,54 @@ class BookingHistoriesController < ApplicationController
   end
 
   def search
-    #@booked_list = BookingHistory.where(room_num: params[:room_num])
     @booking = BookingHistory.new(booking_history_params)
-    # @booked_list = BookingHistory.all
-    # @booked_entry = @booked_list.select do |bh|
-
-
-    #  bh.room_num == @booking.room_num && bh.date == @booking.date
     if params[:booking_history][:room_num]
+      @rooms_matching_library =  LibraryRoom.where("library_rooms.number = ?",@booking.room_num )
+    #  if @rooms_matching_library.exists?
+    #    else
+    #      flash[:notice] = "Invalid search."
+    #      if session[:user_role] == 'admin'
+    #        redirect_to search_booking_history_url
+    #        else
+    #          redirect_to booking_histories_url
+    #      end
+    #  end
       @booked_list = BookingHistory.where("booking_histories.room_num = ? AND date = ?",@booking.room_num,@booking.date)
-
-      #elsif params[:booking_history][:building]
-      # elsif @booking.building
-      # @booked_list = BookingHistory.joins("LEFT OUTER JOIN library_rooms ON library_rooms.number = booking_histories.room_num")
-      #  @booked_list = booked_list_pre.where("booking_histories.building = ? AND date = ?",@booking.building,@booking.date )
-      #  @booked_list = BookingHistory.where("booking_histories.building = ? AND date = ?",@booking.building,@booking.date )
-
-      # elsif params[:booking_history][:size]
-      # @library = LibraryRoom.new(library: '{#params[:size]}')
-      #  @booked_list = BookingHistory.joins("INNER JOIN library_rooms ON library_rooms.number = booking_histories.number").where("booking_histories.size = ? AND date = ?",@booking.size,@booking.date )
-      #@booked_list = BookingHistory.where("booking_histories.size = ? AND date = ?",@booking.size,@booking.date )
     end
   end
 
-  # GET /booking_histories/1
-  # GET /booking_histories/1.json
-  # @return [Object]
   def show
-    @booking_history = BookingHistory.find(params[:room_num])
+    @booking_history = BookingHistory.where("booking_histories.username = ?",session[:user_name]).order(:date)
   end
 
-
-  # GET /booking_histories/new
-
+  def addteam
+    @booking_history = BookingHistory.where("booking_histories.username = ?",session[:user_name]).order(:date)
+  end
 
   # GET /booking_histories/1/edit
   def edit
   end
 
-  # POST /booking_histories
-  # POST /booking_histories.json
   def create
     check = 0
     @booking_history = BookingHistory.new(booking_history_params)
-    @booking_history =
-    # @booked_list = BookingHistory.all
-    #@booked_entry = @booked_list.select do |bh|
-    # bh.room_num == @booking_history.room_num && bh.date == Date.today + 7.days
-    #end
+    @room_details = LibraryRoom.find_by_number(@booking_history.room_num)
+    if @room_details.nil?
+      if session[:user_role] == 'admin'
+        flash[:notice] = 'Invalid room details'
+        redirect_to new_booking_history_url
+      else
+        flash[:notice] = 'Invalid room details'
+        redirect_to booking_histories_url
+      end
+    end
+    if session[:user_role] == 'admin'
+      then
+    else
+      @booking_history.username = session[:user_name]
+    end
+    @booking_history.building = @room_details.building
+    @booking_history.size = @room_details.size
     @booked_entry = BookingHistory.where("room_num = ? AND date = ?",@booking_history.room_num,@booking_history.date ).order(:start_t)
 
     @booked_entry.each do |entry|
@@ -84,10 +80,14 @@ class BookingHistoriesController < ApplicationController
       if check ==0
         if (@booking_history.save)
           flash[:notice] = "Booking was successfully created. Booking id #{@booking_history.id}"
-          format.html { redirect_to booking_histories_path}
+          if session[:user_role] == 'admin'
+            format.html { redirect_to dum_path}
+            else
+              format.html { redirect_to booking_histories_path}
+              end
           # format.json { render :show, status: :created, location: @booking_history }
         else
-          flash[:notice] = "Booking was failed. Booking id #{@booking_history.id}"
+          flash[:notice] = "Booking failed. Booking id #{@booking_history.id}"
           format.html { redirect_to booking_histories_path }
           # format.json { render json: @booking_history.errors, status: :unprocessable_entity }
         end
@@ -118,16 +118,24 @@ class BookingHistoriesController < ApplicationController
     end
   end
 
+  def bkhist
+    @booking_history = BookingHistory.new
+  end
+
+  def memshist
+    @booking_history = BookingHistory.new(booking_history_params)
+  end
+
   # DELETE /booking_histories/1
   # DELETE /booking_histories/1.json
   def destroy
+    @booking_history = BookingHistory.find_by_id(params[:booking_history][:id])
     @booking_history.destroy
     respond_to do |format|
       format.html { redirect_to booking_histories_url, notice: 'Booking history was successfully destroyed.' }
       format.json { head :no_content }
     end
   end
-
 
   private
   # Use callbacks to share common setup or constraints between actions.
@@ -139,6 +147,18 @@ class BookingHistoriesController < ApplicationController
     @hist_room = BookingHistory.where("room_num = ?",@booking_history.room_num).order(:start_t)
   end
 
+  def bookingdel
+    @booking_history = BookingHistory.new
+  end
+
+  def deleteexisitingbooking
+    @booking_history = BookingHistory.find_by_id(params[:booking_history][:id])
+    @booking_history.destroy
+    respond_to do |format|
+      format.html { redirect_to booking_histories_url, notice: 'Booking history deleted successfully.' }
+      format.json { head :no_content }
+    end
+  end
   # Never trust parameters from the scary internet, only allow the white list through.
   def booking_history_params
     params.require(:booking_history).permit(:id, :username, :room_num, :start_t, :end_t, :date, :building, :size)
